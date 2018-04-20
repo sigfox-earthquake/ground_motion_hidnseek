@@ -26,20 +26,30 @@
  * Basic sketch usinglow-power modes and interrupts witha MMA8652FC 3-Axis
  * accelerometer.
  */
- 
+ #include "mma8652_regs.h"
 #include "HardwareSerial.h"
 #include "Wire.h"
 #include "mma8652.h"
 
+//#include "HidnSeek.h"
+
 // Accelerometer object. Interruptable pin = internal ACC_INT pin
 #define ACC_INT  11 // Accelerometer interrupt pin
+//#define ACC_INT  5 // Accelerometer interrupt pin possibly?
 #define ACC_POWER_PIN 9 // Power pin from the host
-#define bluLEDpin 6     // PD6 Piezzo Output
+//#define bluLEDpin 6     // PD6 Piezzo Output
 #define LED 7     // PD7 Red LED Status
 MMA8652 accel = MMA8652(ACC_INT); 
 
 // Used to read statuses and source registers
 uint8_t status, intSource;
+int x = 0;
+int y = 0;
+int z = 0;
+int last_x = 0;
+int last_y = 0;
+int last_z = 0;
+int on = -1;
 
 /**
  * accEvent
@@ -48,6 +58,10 @@ uint8_t status, intSource;
  */
 void accEvent(void)
 {
+//  for (int i = 0; i < 1000; i++){
+    Serial.println("Calling accEvent");
+    //}
+//  delay(100000);
   digitalWrite(LED, !digitalRead(LED));
 //  panstamp.wakeUp();
 }
@@ -57,7 +71,8 @@ void accEvent(void)
  */
 void setup()
 {
-  Serial.begin(38400);
+//  on = 0;
+  Serial.begin(57600);
   Serial.println("Starting...");
 
   pinMode(LED, OUTPUT);
@@ -72,20 +87,19 @@ void setup()
   delay(1);
   
   // Enable single-tap detection interruption
-  //accel.enableTapInt(0x10);
-  accel.enableTapInt(0);
+  accel.enableTapInt(0x10);
+//  accel.enableTapInt(0);
   delay(1);
-  // Enable Portrait/Landscape orientation interrupt
-  //accel.enablePlInt();
-  delay(1);
-  // Enable Free-Fall detection interrupt
-  //accel.enableFreeFallInt(0x30);
-  //accel.enableFreeFallInt(0);
-  delay(1);
+//  // Enable Portrait/Landscape orientation interrupt
+//  accel.enablePlInt();
+//  delay(1);
+//  // Enable Free-Fall detection interrupt
+////  accel.enableFreeFallInt(0x30);
+//  accel.enableFreeFallInt(3);
+//  delay(1);
 
   // Declare custom ISR
   accel.attachInterrupt(accEvent);
-
 }
 
 /**
@@ -96,32 +110,85 @@ void loop()
   // Go to sleep
   digitalWrite(LED, LOW);
   accel.sleep();    // Accelerometer in sleep mode
-//  panstamp.sleep(); // panStamp in sleep mode
-  digitalWrite(LED, HIGH);
 
+//  panstamp.sleep(); // panStamp in sleep mode
+//  digitalWrite(LED, HIGH);
+
+//Serial.println(accel.read(SMOD_LOW_POWER));
+//Serial.println(accel.read(CTRL_REG5), HEX);
+//Serial.println(accel.read(CTRL_REG1), HEX);
   /**
    * We could be polling for an ACC event but we prefer to be interrupted instead
    * If you want to display all the above Serial.prints correctly then comment
    * panstamp.sleep() out and uncomment the following line
    */
-   //if (accel.eventAvailable()) {}
+//   Serial.println((String)"double tap:        " + enableDoubleTapInt(50));
+//   if (accel.eventAvailable()) {}//Serial.println(accel.eventAvailable());}
   
   // Read source of interrupt
+//    Serial.println(intSource, HEX);
   intSource = accel.readIntSource();
-  
+  delay(10);
+
+  if(SRC_PULSE_MASK || (on >= 0))
+  {
+    status = accel.readPulseSource();
+    if (status == 0xC0|| (on >= 0)){
+//if (on == 0)
+//  digitalWrite(accel.read(CTRL_REG1));//ASLP_RATE1, 
+  digitalWrite(LED, HIGH);
+//Serial.println(accel.read(SYSMOD_SLEEP), HEX);
+//delay(10);
   // Read XYZ data. Available from accel.axis
   accel.readXYZ();
+//
+// last_x = x;
+// last_y = y;
+// last_z = z;
 
- 
+ x = accel.axis.x;
+ y = accel.axis.y;
+ z = accel.axis.z;
+// if (abs(last_x - x) > 50)
+//  Serial.println("detected x");
+// else if (abs(last_y - y) > 50)
+//  Serial.println("detected y");
+// else if (abs(last_z - z) > 50)
+//  Serial.println("detected z");
+// else
+//  accel.sleep();
+//if ((abs(last_x - x) > 50) || (abs(last_y - y) > 50) || (abs(last_z - z) > 50) || (on >= 0)){
   Serial.print(",");//X axis : ");
-  Serial.print(accel.axis.x);
+  Serial.print(x);
   Serial.print(",");//Y axis : ");
-  Serial.print(accel.axis.y);
+  Serial.print(y);
   Serial.print(",");//Z axis : ");
-  Serial.println(accel.axis.z);
- 
+//  Serial.println(on);
+  Serial.println(z);
+  on++;
+  if (on == 300)
+    on = -1;
+}
+//else
+//Serial.println(accel.read(SYSMOD_SLEEP), HEX);
+//delay(10);
+//    Serial.println(accel.read(SMOD_LOW_POWER));
+    }
+//    else
+//Serial.println(accel.read(SYSMOD_SLEEP), HEX);
+//delay(10);
 
-/*  
+//   }
+//   else
+//    delay(1000);
+//   if ( on % 1000 == 0){
+//    delay(100000);Serial.println("you're in");}
+//   accel.sleep();
+//  on++;
+// }
+
+
+/*
   // Portrait/Landscape orientation interrupt?
   if(intSource & SRC_LNDPRT_MASK)
   {
@@ -129,13 +196,16 @@ void loop()
     Serial.print("PL status : ");
     Serial.println(status, HEX);
   }
-  // Pulse detection interrupt?
-  if(intSource & SRC_PULSE_MASK)
-  {
-    status = accel.readPulseSource();
-    Serial.print("TAP status : ");
-    Serial.println(status, HEX);
-  }
+  */
+//  // Pulse detection interrupt?
+//  if(intSource & SRC_PULSE_MASK)
+//  {
+//    status = accel.readPulseSource();
+//    if (status == 0xC0){
+//    Serial.print("TAP status : ");
+//    Serial.println(status, HEX);}
+//  }
+  /*
   //
   if(intSource & SRC_FF_MT_MASK)
   {
