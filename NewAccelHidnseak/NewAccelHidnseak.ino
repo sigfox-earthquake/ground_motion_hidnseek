@@ -72,7 +72,7 @@ void accEvent(void)
 void setup()
 {
 //  on = 0;
-  Serial.begin(57600);
+  Serial.begin(9600);
   Serial.println("Starting...");
 
   pinMode(LED, OUTPUT);

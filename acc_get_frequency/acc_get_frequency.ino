@@ -1,3 +1,9 @@
+/*
+ * determine the frequency and the estimated energy/impact force
+ *  (will have to do more research into this)
+ */
+
+
 #include <EEPROM.h>
 
 int a = 0;
@@ -10,13 +16,13 @@ void setup()
     EEPROM.write(i, i);
 }
 //just a test I was doing. Not working
-//void get_frequency(uint8_t *array_of_xyz, uint8_t time_passed, uint8_t values)
+//void get_frequency(int *array_of_xyz, int time_passed, int values)
 //{
 //  int z_amplitude = NULL;
 //  //0, 3, -4, 7, -8, 5, -2
 //  //find the frequency of x and y
 //  //absvalue/time. 
-//  //how long does it take to get from 0 to 0. that is the hertz
+//  //how long does it take to get from 0 to 2nd 0. that is the hertz
 //  //what is the distance between the highest value and the lowest value 
 //
 //  time_between_vals = time_passed / values;
@@ -32,7 +38,7 @@ void setup()
 //}
 //int main()
 //{
-//  uint8_t array_one[7] = {0, 3, -4, 7, -8, 5, -2};
+//  int array_one[7] = {0, 3, -4, 7, -8, 5, -2};
 //  get_frequency(array_one, 10, 7);
 //}
 
